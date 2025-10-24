@@ -74,7 +74,7 @@
 
 ---
 
-## 6. 精简版 3D 拟合（`fit_parametric_3d_multistart` 思想）
+## 6. 3D 拟合（`fit_parametric_3d_multistart` 思想）
 
 **问题**：给定两投影 `XOZ(z,x)` 与 `YOZ(z,y)`，拟合单一 3D 参数模型
 
@@ -143,6 +143,6 @@ $$
 
 ---
 
-**到此为止**：
+**所以现在**：
 
 * 使用者只需准备两张互相垂直的 DICOM、可选的 DeepSA 权重、以及 `planes/fixed_frames` 配置，即可一键输出 CSV 并完成 3D 拟合与可视化。

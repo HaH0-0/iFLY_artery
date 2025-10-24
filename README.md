@@ -58,7 +58,7 @@ pip install pillow
   # 确保 DeepSA/ckpt/ 下存在至少一个权重，如：
   # DeepSA/ckpt/fscad_36249.ckpt
   ```
-* Notebook 顶部参数区设置：
+* 参数区设置：
 
   ```python
   USE_DEEPSA  = True               # 开启/关闭 DeepSA
@@ -104,31 +104,29 @@ save_dir/
 ### 4.1 设置参数（Notebook 顶部“参数区”）
 
 ```python
-# —— 路径与 I/O ——
+# 路径与 I/O
 PATIENT_FOLDER = "/abs/path/to/患者1-血管造影图像"
 SAVE_DIR       = "/abs/path/to/patient_1_results"
 
-# —— 选择两张互相垂直的 DICOM（1-based）与平面类型 ——
+# 选择两张互相垂直的 DICOM 与平面类型 
 PAIR          = (5, 4)                # 例：第5与第4张 DICOM 互相垂直
 PLANES        = ("XOZ", "YOZ")        # 视图1=XOZ，视图2=YOZ
 
-# —— 可选：指定每个视图使用的 cine 帧号（建议用“影像数据说明.docx”的推荐帧）——
-FIXED_FRAMES  = (26, 20)              # 若未知可设 None，走自动挑帧
+# 可选：指定每个视图使用的 cine 帧号（
+FIXED_FRAMES  = (26, 20)              # 若未知可设 None，自动挑帧
 # FIXED_FRAMES = None
 
-# —— 坐标翻转（如发现 z/x/y 方向与预期相反时调此处）——
+# 坐标翻转（如发现 z/x/y 方向与预期相反时调此处）
 FLIPS         = ((+1, +1), (+1, +1))  # ((row_sign, col_sign), ...)
 
-# —— DeepSA 设置（可选但推荐）——
+# DeepSA 设置（推荐)
 USE_DEEPSA    = True
 DEEPSA_ROOT   = "/abs/path/to/DeepSA"
 ```
 
-> **建议**：若“影像数据说明.docx”给出了每个患者推荐帧，**优先**使用 `FIXED_FRAMES=(k1,k2)`；自动挑帧仅作备选。
+> **建议**：若知道患者的垂直帧，**优先**使用 `FIXED_FRAMES=(k1,k2)`；自动挑帧仅作备选。
 
 ### 4.2 跑 DICOM → 中心线 → CSV（含可视化）
-
-Notebook 中已实现“一键处理”与“可视化核对”：
 
 ```python
 # 1) 处理并导出 CSV（z,x）与（z,y），同时生成 overlay/xoz/yoz PNG
@@ -155,7 +153,7 @@ visualize_full_results(
 )
 ```
 
-完成后你会在 `SAVE_DIR` 看到：
+完成后会在 `SAVE_DIR` 看到：
 
 * `xoz.csv` / `yoz.csv`（**z 首列**，单位 mm）
 * `overlay_view1.png` / `overlay_view2.png`（裁剪图 + 主干路径）
@@ -168,9 +166,9 @@ visualize_full_results(
 
 ---
 
-## 5. 3D 拟合器（精简版）的使用
+## 5. 3D 拟合器的使用
 
-Notebook 内置了**精简版** `fit_parametric_3d_multistart`，目标是从两条投影曲线
+Notebook 里有 `fit_parametric_3d_multistart`，目标是从两条投影曲线
 
 * `XOZ: (z, x)`
 * `YOZ: (z, y)`
@@ -182,7 +180,7 @@ y(t)=d t+e\cos(ft),\quad
 z(t)=g t+h\sin(it),\quad t\in[0,1].
 $$
 
-### 5.1 快速上手
+### 5.1 实践
 
 ```python
 from math import pi
@@ -190,14 +188,14 @@ theta, rms, ise = fit_parametric_3d_multistart(
     xoz_csv = f"{SAVE_DIR}/xoz.csv",   # 由上一步导出的 CSV
     yoz_csv = f"{SAVE_DIR}/yoz.csv",
     out_dir = SAVE_DIR,                # 拟合相关输出也放在同一目录
-    # 关键可调参数（下节详解）：
+    # 关键可调参数：
     n_grid                = 1500,      # t 网格密度（越大越稳但更慢）
     n_starts              = 30,        # 多启动次数/组合
     freq_hi_list          = (6*pi, 10*pi),  # 三轴频率上限的候选（降低过拟合）
     monotone_penalty_list = (10.0, 30.0),   # z'(t) 单调软惩罚强度
     amp_factor            = 2.0,       # 正弦幅度上限 = 轴范围 × amp_factor
-    seed                  = 42,        # 随机种子，保证复现
-    polish                = True       # 末端小范围“频率抛光”
+    seed                  = 42,        # 随机种子
+    polish                = True       # 末端小范围的“频率抛光”
 )
 
 print("Best params θ (a..i):", theta)
@@ -238,7 +236,7 @@ print("RMS =", rms, "  ISE =", ise)
 
 **提示**：`alpha_radius` / `beta_prob` 等是**分割→中心线**阶段的参数（影响 CSV 质量）；这里只列出了 3D 拟合器相关的参数。
 
-### 5.4 原理小结（一句话版）
+### 5.4 原理总结
 
 * 用 `XOZ/YOZ` 的 z 交集构造统一 z 网格 → 归一化为 $t\in[0,1]$，在该网格上**同时**拟合 $x(t),y(t),z(t)$；
 * 二阶项靠正弦补充柔性，z'(t) 加软惩罚保持“向前”；
@@ -276,7 +274,7 @@ print("RMS =", rms, "  ISE =", ise)
 
    * 略增 `binary_closing`、减小 `min_object_area`；
    * 或切换为“骨架最长路径”兜底；
-   * DeepSA 推理时建议打开 **Multi-angle** 与 **Pad margin**（Notebook 已实现等效）。
+   * DeepSA 推理时建议打开 **Multi-angle** 与 **Pad margin**（Notebook 已实现）。
 
 4. **投影曲线与 overlay 视觉不一致**
 
@@ -297,7 +295,7 @@ print("RMS =", rms, "  ISE =", ise)
 ## 8. 评测最小示例（含 3D 拟合）
 
 ```python
-# —— 前端：生成 CSV + 可视化 ——
+# 前端：生成 CSV + 可视化 
 deepsa = DeepSAWrapper(DEEPSA_ROOT) if USE_DEEPSA else None
 
 xoz, yoz = process_patient_dicoms(
@@ -319,7 +317,7 @@ visualize_full_results(
     save_fig      = SAVE_DIR
 )
 
-# —— 3D 拟合（精简版）——
+# 3D 拟合
 from math import pi
 theta, rms, ise = fit_parametric_3d_multistart(
     xoz_csv = f"{SAVE_DIR}/xoz.csv",
@@ -340,7 +338,7 @@ print("RMS =", rms, "ISE =", ise)
 
 ---
 
-## 9. 关键可调（建议默认）
+## 9. 关键可调参数（建议默认）
 
 * 分割：`min_object_area=300~600`，`open_disk_radius=1~2`，`clear_border=True`。
 * 主干（测地）：`alpha≈0.9~0.95`，`beta≈0.1~0.2`，`n_end_candidates=20~40`，`edge_bias=True`。
